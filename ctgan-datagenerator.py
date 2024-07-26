@@ -1,3 +1,4 @@
+! pip install sdv
 import streamlit as st
 import pandas as pd
 from sdv.single_table import CTGANSynthesizer

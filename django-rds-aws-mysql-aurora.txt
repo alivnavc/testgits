@@ -1,0 +1,41 @@
+1. Set Up an SSH Tunnel
+First, create an SSH tunnel from your local machine (or wherever your Django application is running) to the bastion host, which forwards traffic to the private Aurora database.
+
+Use the following SSH command to establish the tunnel:
+
+bash
+Copy code
+ssh -i /path/to/your/private-key.pem -N -L 3307:aurora-endpoint:3306 ec2-user@bastion-host-ip
+Replace /path/to/your/private-key.pem with the path to your SSH private key.
+Replace aurora-endpoint with your Aurora endpoint.
+Replace bastion-host-ip with the IP address of your bastion host.
+The -L 3307:aurora-endpoint:3306 option forwards traffic from localhost:3307 to aurora-endpoint:3306.
+2. Configure settings.py in Django
+Next, update your settings.py to point to the local port created by the SSH tunnel:
+
+python
+Copy code
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',  # Use the MySQL backend
+        'NAME': 'your_database_name',  # Replace with your Aurora database name
+        'USER': 'your_username',  # Replace with your Aurora username
+        'PASSWORD': 'your_password',  # Replace with your Aurora password
+        'HOST': '127.0.0.1',  # Localhost since SSH tunnel is on your machine
+        'PORT': '3307',  # The local port you're forwarding to the Aurora instance
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
+}
+
+# Keep the connection open for 10 minutes
+DATABASES['default']['CONN_MAX_AGE'] = 600
+
+# SSL Configuration (if required)
+DATABASES['default']['OPTIONS']['ssl'] = {
+    'ca': '/path/to/rds-ca-cert.pem',  # Path to the Amazon RDS CA certificate
+}
+3. Run the SSH Tunnel and Start Django
+Ensure the SSH tunnel is running in your terminal. You can run it in the background or use a tool like autossh to maintain the connection.
+Start your Django application. It should now be able to connect to the Aurora database through the bastion host.
